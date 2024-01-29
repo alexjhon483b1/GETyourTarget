@@ -1,0 +1,3 @@
+script output.txt
+
+exit
