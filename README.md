@@ -9,3 +9,11 @@ ip at a time.
 it's like this project:
 https://github.com/alexjhon483b1/OpenPort/tree/4th
 
+this commands will come to use to execute this script 
+sudo apt-get install parallel
+
+./run.sh | tee -a output.txt
+
+cat output.txt | grep "<keyword>"
+
+
