@@ -1,10 +1,50 @@
 #include <stdio.h>
 #include <curl/curl.h>
+#include <string.h>
 
 // Callback function to capture header data
 size_t headerCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     // Print the header data
-    printf("%.*s", (int)(size * nmemb), (char*)contents);
+  char formattedString[9999];  // Adjust the size accordingly
+    snprintf(formattedString, sizeof(formattedString), "%.*s", (int)(size * nmemb), (char*)contents);
+
+    // Print the string
+    printf("%s\n", formattedString);
+    
+    // Search for "Server:" in the string
+    const char *serverStart = strstr(formattedString, "Server:");
+    
+    if (serverStart != NULL) {
+        // Move the pointer to the beginning of the server detail
+        serverStart += strlen("Server:");
+
+        // Extract the server detail using sscanf
+        char serverDetail[100]; // Adjust the size as needed
+        sscanf(serverStart, " %49s", serverDetail);
+
+        // Print the extracted server detail
+        printf("Server Detail: %s\n", serverDetail);
+        // Check if "Apache" or "apache" is present in serverDetail
+    if (strstr(serverDetail, "Apache") != NULL || strstr(serverDetail, "apache") != NULL) {
+        // Check if "2.4.49" is also present
+        if (strstr(serverDetail, "2.4.49") != NULL) {
+            // Perform actions if both conditions are met
+            printf("Server details match: Apache and version 2.4.49\n");
+
+            // Your code here
+
+        } else {
+            // Print a message if "2.4.49" is not found
+            printf("Server version does not match (expected: 2.4.49)\n");
+        }
+    } else {
+        // Print a message if "Apache" or "apache" is not found
+        printf("Server type does not match (expected: Apache)\n");
+    } 
+    } else {
+        printf("\n");
+    }
+    
     return size * nmemb;
 }
 
@@ -43,7 +83,6 @@ int main(int argc, char* argv[]) {
         headers = curl_slist_append(headers, "Accept-Encoding: gzip, deflate");
         headers = curl_slist_append(headers, "Accept-Language: en-US,en;q=0.5");
         headers = curl_slist_append(headers, "Connection: keep-alive");
-        headers = curl_slist_append(headers, "Host: example.com");
         headers = curl_slist_append(headers, "Upgrade-Insecure-Requests: 1");
         headers = curl_slist_append(headers, "User-Agent: Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
