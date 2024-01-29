@@ -43,7 +43,6 @@ int main(int argc, char* argv[]) {
         headers = curl_slist_append(headers, "Accept-Encoding: gzip, deflate");
         headers = curl_slist_append(headers, "Accept-Language: en-US,en;q=0.5");
         headers = curl_slist_append(headers, "Connection: keep-alive");
-        headers = curl_slist_append(headers, "Host: example.com");
         headers = curl_slist_append(headers, "Upgrade-Insecure-Requests: 1");
         headers = curl_slist_append(headers, "User-Agent: Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
