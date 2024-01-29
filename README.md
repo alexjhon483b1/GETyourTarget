@@ -15,6 +15,6 @@ sudo apt-get install parallel
 
 ./run.sh | tee -a output.txt
 
-cat output.txt | grep "<keyword>"
+cat output.txt | grep "keyword"
 
 
