@@ -1,65 +1,48 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <curl/curl.h>
 #include <string.h>
+
+// Structure to store response body data
+struct MemoryStruct {
+    char* memory;
+    size_t size;
+};
 
 // Callback function to capture header data
 size_t headerCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     // Print the header data
-  char formattedString[9999];  // Adjust the size accordingly
-    snprintf(formattedString, sizeof(formattedString), "%.*s", (int)(size * nmemb), (char*)contents);
-
-    // Print the string
-    printf("%s\n", formattedString);
-    
-    // Search for "Server:" in the string
-    const char *serverStart = strstr(formattedString, "Server:");
-    
-    if (serverStart != NULL) {
-        // Move the pointer to the beginning of the server detail
-        serverStart += strlen("Server:");
-
-        // Extract the server detail using sscanf
-        char serverDetail[100]; // Adjust the size as needed
-        sscanf(serverStart, " %49s", serverDetail);
-
-        // Print the extracted server detail
-        printf("Server Detail: %s\n", serverDetail);
-        // Check if "Apache" or "apache" is present in serverDetail
-    if (strstr(serverDetail, "Apache") != NULL || strstr(serverDetail, "apache") != NULL) {
-        // Check if "2.4.49" is also present
-        if (strstr(serverDetail, "2.4.49") != NULL) {
-            // Perform actions if both conditions are met
-            printf("Server details match: Apache and version 2.4.49\n");
-
-            // Your code here
-
-        } else {
-            // Print a message if "2.4.49" is not found
-            printf("Server version does not match (expected: 2.4.49)\n");
-        }
-    } else {
-        // Print a message if "Apache" or "apache" is not found
-        printf("Server type does not match (expected: Apache)\n");
-    } 
-    } else {
-        printf("\n");
-    }
-    
+    printf("%.*s", (int)(size * nmemb), (char*)contents);
     return size * nmemb;
 }
 
-// Callback function to ignore response body
+// Callback function to store and print response body
 size_t writeCallback(void* contents, size_t size, size_t nmemb, void* userp) {
-    // Just return the size without storing the body
-    return size * nmemb;
+    size_t realsize = size * nmemb;
+    struct MemoryStruct* mem = (struct MemoryStruct*)userp;
+
+    // Reallocate memory to store the response body
+    mem->memory = realloc(mem->memory, mem->size + realsize + 1);
+    if (mem->memory == NULL) {
+        // Out of memory
+        fprintf(stderr, "Memory allocation failed\n");
+        return 0;
+    }
+
+    // Copy response body data to the allocated memory
+    memcpy(&(mem->memory[mem->size]), contents, realsize);
+    mem->size += realsize;
+    mem->memory[mem->size] = 0; // Null-terminate the string
+
+    return realsize;
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <IP> <PORT>\n", argv[0]);
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <IP>\n", argv[0]);
         return 1;
     }
-    fprintf(stderr, "%s:%s\n", argv[1],argv[2]);
+    fprintf(stderr, "%s\n", argv[1]);
     CURL* curl;
     CURLcode res;
 
@@ -71,11 +54,11 @@ int main(int argc, char* argv[]) {
     if (curl) {
         // Set the URL with IP and PORT
         char url[256];
-        snprintf(url, sizeof(url), "http://%s:%s", argv[1], argv[2]);
+        snprintf(url, sizeof(url), "http://%s", argv[1]);
         curl_easy_setopt(curl, CURLOPT_URL, url);
 
         // Set timeout (in seconds)
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3L);
 
         // Set custom headers
         struct curl_slist* headers = NULL;
@@ -90,8 +73,12 @@ int main(int argc, char* argv[]) {
         // Set the header callback function
         curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, headerCallback);
 
-        // Set the write callback function to ignore response body
+        // Set the write callback function to store and print response body
+        struct MemoryStruct chunk;
+        chunk.memory = malloc(1);  // Initial size
+        chunk.size = 0;
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&chunk);
 
         // Perform the HTTP GET request
         res = curl_easy_perform(curl);
@@ -99,8 +86,12 @@ int main(int argc, char* argv[]) {
         // Check for errors
         if (res != CURLE_OK)
             fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        else
+            // Print the entire response body
+            printf("\n\nResponse Body:\n%s\n", chunk.memory);
 
         // Cleanup
+        free(chunk.memory);
         curl_slist_free_all(headers);
         curl_easy_cleanup(curl);
     }

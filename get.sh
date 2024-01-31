@@ -25,13 +25,13 @@ iterate_ip_range() {
 }
 
 # Example usage: iterate_ip_range <start_ip> <end_ip>
-start_ip="103.78.24.38"
-end_ip="103.78.247.255"
+start_ip="103.89.255.188"
+end_ip="104.78.247.255"
 
 # Create a temporary file for the IP list
 tmp_ip_list=$(mktemp)
 
 # Run the command in parallel with 120 IP addresses at a time
-iterate_ip_range "$start_ip" "$end_ip" | parallel -j 160 ./get {} 80
+iterate_ip_range "$start_ip" "$end_ip" | parallel -j 1000 ./get {}
 # Clean up the temporary file
 rm -f "$tmp_ip_list"
